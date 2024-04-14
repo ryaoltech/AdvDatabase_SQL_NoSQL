@@ -1,0 +1,29 @@
+
+--Exercise 1. List of criminals with less than average violations and having aliases.
+select c.criminal_id, c.last, c.first, a.alias from criminals c, aliases a, (select * from sentences where violations < (select avg(violations) from sentences)) v
+where c.criminal_id = a.criminal_id and a.criminal_id = v.criminal_id
+
+--Exercise 2. List criminal(s) that Crime charges court fee is greater than min per crime.
+
+select c.first, c.last, cr.crime_id, ch.court_fee from criminals c, crimes cr, crime_charges ch
+where c.criminal_id = cr.criminal_id and cr.crime_id = ch.crime_id and ch.court_fee > (select min(court_fee) minimun from crime_charges)
+
+--Exercise 3. List Officers that have less of equal avg number of crimes assigned.
+
+select o.officer_id, o.first, o.last from (select * from (select officer_id, count(*) crime_assigned from crime_officers group by officer_id)
+where crime_assigned < (select avg(count(*)) average from crime_officers group by officer_id)) t, officers o
+where t.officer_id = o.officer_id
+
+--Exercise 4. List criminals that have Max amount paid in crime charges per crime.
+select c.criminal_id, cr.crime_id,c.first, c.last,cch.amount_paid from criminals c, crimes cr, crime_charges cch
+where c.criminal_id = cr.criminal_id and cr.crime_id = cch.crime_id and cch.amount_paid = (select max(amount_paid) from crime_charges)
+
+--Exercise 5. List criminals that have less or equal  than average sentences issued.
+select c.criminal_id, c.First, c.Last from criminals c, (select criminal_id, count(*) nro_sentences from sentences group by criminal_id) n
+where c.criminal_id = n.criminal_id and n.nro_sentences <= (select avg(count(*)) from sentences group by criminal_id)
+
+--Exercise 6. List probation officers that have less than average criminals with sentences assigned with them.
+
+select a.prob_id, p.first, p.last from (select prob_id, count(*) num_sentences from sentences
+where prob_id is not null group by prob_id) a, prob_officers p
+where a.num_sentences < (select avg(count(*)) from sentences s group by prob_id having prob_id is not null) and a.prob_id = p.prob_id

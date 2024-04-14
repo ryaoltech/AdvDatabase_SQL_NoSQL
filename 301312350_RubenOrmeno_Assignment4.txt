@@ -1,0 +1,56 @@
+1. Find all listings with listing_url, name, address, host_verification and size of host_verification array in the listingsAndReviews collection that have a host with at least 3 verifications and collection that have a host with a picture url.
+
+db.listingandreviews.aggregate([
+{$project:{_id:1, listing_url:1, name:1, address:1, host_verifications1:"$host.host_verifications", host_picture_url:"$host.host_picture_url", host_verifications2:"$host.host_verifications"}},
+{$unwind:"$host_verifications2"},
+{$group:{_id:"$_id", listing_url:{$first:"$listing_url"}, name:{$first:"$name"}, address:{$first: "$address"}, host_verification:{$first:"$host_verifications1"}, size_host_verification:{$sum:1}}},
+{$match:{"size_host_verification":{$gt:3}}},
+{$sort:{size_host_verification:-1}}
+])
+
+
+3. Write a MongoDB query to find the name, address, and cuisine of the restaurants that have a cuisine that contains the word 'Pizza' and achieved highest average score
+
+db.restaurants.aggregate([ 
+  { $project: {_id:1, name:1, address:1, cuisine:1, grades:1} },
+  { $addFields: {avg_score:{$avg: "$grades.score"}}},
+  {$group:{_id:null, highest_avg_score:{$max:"$avg_score"}, data:{$push:"$$ROOT"}}},
+  {$unwind: "$data"},
+  {$addFields:{"data.highest_avg_score":"$highest_avg_score"}},
+  {$replaceRoot:{newRoot: "$data"}},
+  {$match:{$expr:{$eq:["$avg_score","$highest_avg_score"]}}}
+])
+
+// need to add the function to get the highest avg. score.
+
+
+4. Write a MongoDB query to find the restaurants that has highest number of "A" grades
+for the cuisine "Turkish".
+
+db.restaurants.aggregate([
+{$match: {cuisine: {$regex: /Turkish/i}, "grades.grade":'A'}},
+{$project: {_id:1, name:1, cuisine:1, grades:1}},
+{$unwind: "$grades"},
+{$match: {"grades.grade":'A'}},
+{$group: {_id: "$_id", name:{$first:"$name"}, cuisine:{$first:"$cuisine"}, total_As:{$sum: 1}}},
+{$sort: {total_As:-1}},
+{$group: {_id:null, highest_total_As:{$max:"$total_As"}, data:{$push:"$$ROOT"}}},
+{$unwind:"$data"},
+{$addFields:{"data.highest_total_As":"$highest_total_As"}},
+{$replaceRoot:{newRoot: "$data"}},
+{$match:{$expr:{$eq:["$total_As","$highest_total_As"]}}}
+])
+
+// need to add the function to get the highest avg. score.
+
+
+5. Write a MongoDB query to find the top 5 restaurants with the highest average score for Chinese restaurants, along with their average scores. 
+
+db.restaurants.aggregate([ 
+{ $project: {_id:1, name:1, cuisine:1, grades:1} },
+{ $match: { cuisine: {$regex: /chinese/i}}},
+{ $unwind: "$grades"},
+{ $group: {_id: "$_id", name: {$first: "$name"}, cuisine:{$first: "$cuisine"}, avg_score:{$avg:"$grades.score"}}},
+{ $sort: {avg_score:-1}},
+{$limit: 5}
+])

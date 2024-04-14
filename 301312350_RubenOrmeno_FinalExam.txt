@@ -1,0 +1,71 @@
+--1. List the name of each officer who has reported min number of crimes officers have reported.
+
+SELECT a.OFFICER_ID, b.FIRST, b.LAST, a.CRIMES_REPORTED
+FROM (SELECT OFFICER_ID, COUNT(CRIME_ID) CRIMES_REPORTED FROM CRIME_OFFICERS GROUP BY OFFICER_ID) a, OFFICERS b 
+WHERE a.CRIMES_REPORTED = (SELECT MIN(CRIMES_REPORTED) FROM (SELECT OFFICER_ID, COUNT(CRIME_ID) CRIMES_REPORTED FROM CRIME_OFFICERS GROUP BY OFFICER_ID)) and a.OFFICER_ID = b.OFFICER_ID
+
+
+-- 2. List the names of probation officers who have had a more or equal than average number of criminals assigned.
+
+SELECT a.PROB_ID, b.FIRST, b.LAST 
+FROM (select PROB_ID, COUNT(*) CRIMINALS_ASSIGNED from sentences s group by prob_id having prob_id is not null) a, prob_officers b
+WHERE a.CRIMINALS_ASSIGNED >= (select avg(count(*)) from sentences s group by prob_id having prob_id is not null) and a.PROB_ID = b.PROB_ID
+
+
+/*
+An administration page in the DoGood Donor application allows employees to enter multiple combinations of donor type and pledge amount to determine data to retrieve. 
+Create a block with a single cursor that allows retrieving data and handling multiple combinations of donor type and pledge amount as input.
+
+The donor name and pledge amount should be retrieved and displayed for each pledge that matches the donor type and is greater than the pledge amount indicated. 
+Use a collection to provide the input data. Test the block using the following input data. 
+Keep in mind that these inputs should be processed with one execution of the block. 
+The donor type code I represents Individual, and B represents Business. 
+Both has to be executed in one run of code.
+Donor Type --- Pledge Amount
+I 250
+B 500
+*/
+
+
+DECLARE
+TYPE param_array IS TABLE OF VARCHAR2(100) INDEX BY PLS_INTEGER;
+  lv_params param_array;
+
+CURSOR cur_display (d_typecode CHAR, p_pledgeamt NUMBER) IS
+    SELECT d.IDDONOR, d.FIRSTNAME, d.LASTNAME, p.PLEDGEAMT
+    FROM DD_PLEDGE p, DD_DONOR d
+    WHERE p.IDDONOR = d.IDDONOR AND p.PLEDGEAMT>=p_pledgeamt AND d.TYPECODE = d_typecode;
+
+
+lv_donor_type DD_DONOR.TYPECODE%TYPE:='I';
+lv_pledge_amount DD_PLEDGE.PLEDGEAMT%TYPE:=500;
+
+BEGIN
+
+lv_params(1) := 'I';
+lv_params(2) := '250';
+lv_params(3) := 'B';
+lv_params(4) := '500';
+
+FOR i in 1..lv_params.COUNT/2 loop
+
+FOR rec_temp IN cur_display(lv_params(i), TO_NUMBER(lv_params(i+1))) LOOP
+DBMS_OUTPUT.PUT_LINE(rec_temp.IDDONOR ||' '|| rec_temp.FIRSTNAME ||' '|| rec_temp.LASTNAME ||' '|| rec_temp.PLEDGEAMT);
+END LOOP;
+
+end loop;
+END;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
